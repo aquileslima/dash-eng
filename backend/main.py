@@ -1,12 +1,27 @@
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import os
 import psycopg2
 from datetime import datetime
 from dotenv import load_dotenv
 
+from .api import router as api_router
+
 load_dotenv()
 
 app = FastAPI(title="Dash-Eng API")
+
+# Configuração de CORS para permitir que o Frontend (Vite) acesse a API localmente
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Em produção, defina o domínio exato
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(api_router)
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_db_connection():
