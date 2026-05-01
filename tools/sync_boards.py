@@ -72,6 +72,8 @@ def sync_all():
 
         # 4. Buscar Cartões
         cards = get_trello_data(f"boards/{board_id}/cards", {'fields': 'name,idList,due,labels,idMembers'})
+        valid_card_ids = {c['id'] for c in (cards or [])}
+        
         for card in (cards or []):
             labels = [{'id': l['id'], 'name': l['name'], 'color': l['color']} for l in card.get('labels', [])]
             
@@ -96,7 +98,7 @@ def sync_all():
             card_id = action.get('data', {}).get('card', {}).get('id')
             date_str = action.get('date')
             
-            if not card_id or not date_str:
+            if not card_id or not date_str or card_id not in valid_card_ids:
                 continue
 
             # Convert string to datetime
