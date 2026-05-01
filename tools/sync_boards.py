@@ -64,6 +64,7 @@ def sync_all():
 
         # 3. Buscar Listas do Quadro
         lists = get_trello_data(f"boards/{board_id}/lists", {'fields': 'name'})
+        valid_list_ids = {lst['id'] for lst in (lists or [])}
         for lst in (lists or []):
             cursor.execute(
                 "INSERT INTO lists (id, project_id, name, type) VALUES (%s, %s, %s, %s) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;",
@@ -106,7 +107,7 @@ def sync_all():
 
             if action['type'] == 'createCard':
                 list_id = action.get('data', {}).get('list', {}).get('id')
-                if list_id:
+                if list_id and list_id in valid_list_ids:
                     cursor.execute(
                         "INSERT INTO card_history (card_id, list_id, entered_at) VALUES (%s, %s, %s)",
                         (card_id, list_id, dt)
@@ -121,10 +122,11 @@ def sync_all():
                         (dt, card_id)
                     )
                     # Abrir a nova lista
-                    cursor.execute(
-                        "INSERT INTO card_history (card_id, list_id, entered_at) VALUES (%s, %s, %s)",
-                        (card_id, list_after, dt)
-                    )
+                    if list_after in valid_list_ids:
+                        cursor.execute(
+                            "INSERT INTO card_history (card_id, list_id, entered_at) VALUES (%s, %s, %s)",
+                            (card_id, list_after, dt)
+                        )
 
         conn.commit()
         print(f"✅ Sincronização do quadro {board_name} concluída.")
